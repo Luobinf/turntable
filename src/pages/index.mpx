@@ -1,5 +1,5 @@
 <template>
-  <list></list>
+  <turntable></turntable>
 </template>
 
 <script lang="ts">
@@ -7,7 +7,7 @@ import { createPage } from '@mpxjs/core'
 
 createPage({
   onLoad() {
-    //
+    
   }
 })
 </script>
@@ -15,7 +15,7 @@ createPage({
 <script type="application/json">
   {
     "usingComponents": {
-      "list": "../components/list"
+      "list": "../components/index/turntable"
     }
   }
 </script>
