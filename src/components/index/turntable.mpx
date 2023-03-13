@@ -1,21 +1,279 @@
 <template>
   <view class="turntable-wrapper">
-    
+    <view class="random-turntable-wrapper">
+      <view class="random-turntable">
+        <view class="turntable-bg-section rotateStyle" wx:style="{{ rotateStyle }}">
+          <view
+            class="bg-section"
+            wx:for="{{wrappedDesionList}}"
+            wx:key="{{ item.id }}"
+            wx:style="{{item.styleBg}}"
+          ></view>
+        </view>
+        <view class="content-main">
+          <view class="desction-list rotateStyle" wx:style="{{ rotateStyle }}">
+            <view
+              class="desction-item"
+              wx:for="{{wrappedDesionList}}"
+              wx:key="{{ item.id }}"
+              wx:style="{{item.style}}"
+            >
+              <text class="desction-text">{{ item.text }}</text>
+            </view>
+          </view>
+          <view class="turntable-point" bindtap="startDoDesion">
+            <view class="inner-point">
+              <text class="point-text">开始</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script lang="ts">
-import { createComponent } from '@mpxjs/core'
+  import { createComponent } from '@mpxjs/core'
 
-createComponent({
-  data: {
-   
-  }
+  const CIRCLE_ANGLE = 360
+  const FONT_SIZE = 36
+  let isRotating = false //为了防止重复点击
+  let descionIndex = 1 //抽中的是第几个奖品
+  let descionId = 3 //决定 ID
+
+const innerAudioContext = wx.createInnerAudioContext()
+innerAudioContext.autoplay = false
+innerAudioContext.src = '../../images/index/2504.mp3'
+innerAudioContext.onPlay(() => {
+  console.log('开始播放')
 })
+innerAudioContext.onError((res) => {
+  console.log(res.errMsg)
+  console.log(res.errCode)
+})
+
+  createComponent({
+    data: {
+      desionList: [
+        {
+          text: '黄焖鸡米饭',
+          color: '#FFACAC',
+          id: 1
+        },
+        {
+          text: '小吴越',
+          color: '#FFBFA9',
+          id: 2
+        },
+        {
+          text: '新发现',
+          color: '#FFEBB4',
+          id: 3
+        },
+        {
+          text: '流芳面馆',
+          color: '#FBFFB1',
+          id: 4
+        },
+        // {
+        //   text: '面馆',
+        //   color: 'red',
+        //   id: 5
+        // },
+        {
+          text: 'xxx',
+          color: 'skyblue',
+          id: 6
+        }
+      ],
+      rotateAngle: 0,
+      angleList: [],
+      rotateStyle: '',
+      config: {
+        duration: 2500,
+        circle: 6,
+        mode: 'ease-in-out'
+      }
+    },
+    properties: {
+
+    },
+    computed: {
+      wrappedDesionList() {
+        const { desionList } = this
+        return this.formatDescionList(desionList)
+      }
+    },
+    methods: {
+      formatDescionList(list) {
+        const { length } = list
+        const average = CIRCLE_ANGLE / length
+        const half = average / 2
+        const rightBig = length == 2 ? 50 : 0
+        const heightBig = length <= 3 ? 100 : 50
+        const topBig = length == 3 ? -50 : 0
+        const skewMain = length <= 2 ? 0 : (-(length - 4) * 90) / length
+
+        list.forEach((item, i) => {
+          // 每个奖项旋转的位置为 当前 i * 平均值 + 平均值 / 2
+          const angle = -(i * average + half)
+          const bigAge = length > 2 ? (i * 360) / length : '0'
+          // 增加 style 这个是给每一个奖项增加的样式
+          item.style = ` 
+            -webkit-transform: rotate(${-angle}deg);
+            transform: rotate(${-angle}deg);
+            width:${(100 / length) * 2}%;  
+            margin-left: -${100 / length}%;
+            font-size: ${FONT_SIZE - length}rpx;`
+          // 这是给每一个转盘背景新增的样式
+
+          item.styleBg = `
+            -webkit-transform: rotate(${bigAge}deg);
+            transform: rotate(${bigAge}deg) skewY(${skewMain}deg);
+            right:${rightBig * i}%;
+            height:${heightBig}%;
+            top:${topBig}%;
+            width:${length == 1 ? 100 : 50}%;
+            background:${item.color};
+          `
+          ;(this.angleList as number[]).push(angle)
+        })
+
+        return list
+      },
+
+      startDoDesion() {
+        innerAudioContext.autoplay = true
+        if (isRotating) return false
+        const { length } = this.desionList
+        descionId = Math.floor(1 + Math.random() * length)
+
+        this.desionList.find((item, i) => {
+          if (item.id == descionId) {
+            descionIndex = i //判断中奖的位置
+          }
+        })
+
+        this.rotating()
+      },
+
+      rotating() {
+        isRotating = true
+        const { config } = this
+        // 计算角度
+        const angle =
+          // 初始角度
+          this.rotateAngle +
+          // 多旋转的圈数
+          config.circle * CIRCLE_ANGLE +
+          // 奖项的角度
+          this.angleList[descionIndex] -
+          (this.rotateAngle % CIRCLE_ANGLE)
+        this.rotateAngle = angle
+        this.rotateStyle = `transform: rotate(${this.rotateAngle}deg);`
+        // 旋转结束后，允许再次触发
+        setTimeout(() => {
+          isRotating = false
+        }, config.duration + 500)
+      }
+    },
+    attached() {},
+    ready() {}
+  })
 </script>
 
 <style lang="stylus">
-
+  .turntable-wrapper 
+    width 640rpx
+    height 640rpx
+    background #ffffff
+    border-radius 50%
+    display flex
+    justify-content center
+    align-items center
+    -webkit-box-shadow 0px 0px 8px 2px rgba(0,0,0,0.15)
+    -moz-box-shadow 0px 0px 8px 2px rgba(0,0,0,0.15)
+    box-shadow 0px 0px 8px 2px rgba(0,0,0,0.15)
+  .random-turntable-wrapper
+    background black
+    width 600rpx
+    height 600rpx
+    border-radius 50%
+    padding 5rpx
+    .rotateStyle
+      -webkit-transition transform 2500ms ease-in-out
+      transition transform 2500ms ease-in-out
+    .random-turntable, .turntable-bg-section
+      background #fff
+      width 100%
+      height 100%
+      border-radius 50%
+      position relative
+      overflow hidden
+      .turntable-bg-section
+        .bg-section
+          position absolute
+          top 0
+          right 0
+          transform-origin 0% 100%
+          border 1px solid black
+          border-right 0
+          border-top 0
+          box-sizing border-box
+    .content-main
+      position absolute
+      left 0
+      right 0
+      top 0
+      bottom 0
+      width 100%
+      height 100%
+      z-index 2
+      .desction-list
+        width 100%
+        height 100%
+        position relative
+        .desction-item
+          position absolute
+          left 50%
+          height 50%
+          padding-top 15px
+          box-sizing border-box
+          text-align center
+          transform-origin 50% 100%
+      .turntable-point
+        position absolute
+        left 50%
+        background #ffffff
+        width 160rpx
+        height 160rpx
+        top 50%
+        margin-left -80rpx
+        margin-top -80rpx
+        border-radius 50%
+        display flex
+        justify-content center
+        align-items center
+        .inner-point
+          width 100rpx
+          height 100rpx
+          border-radius 50%
+          border 4px solid black
+          display flex
+          justify-content center
+          align-items center
+          .point-text
+            font-size 28rpx
+      .turntable-point::after
+        position absolute
+        left 50%
+        top -48rpx
+        width 0
+        height 0
+        margin-left -32rpx
+        border 32rpx solid
+        border-color transparent transparent #ffffff
+        content ''
 </style>
 
 <script type="application/json">

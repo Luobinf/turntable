@@ -13,7 +13,9 @@ createApp({})
 <script type="application/json">
   {
     "pages": [
-      "./pages/index"
+      "./pages/index",
+      "./pages/red-gain",
+      "./pages/settings"
     ]
   }
 </script>
